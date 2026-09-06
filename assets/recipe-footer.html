@@ -1,5 +1,6 @@
 <script>
-/* On a component page ("makes: soffritto"), list the recipes that use it.
+/* On the page of a recipe that is itself an ingredient ("makes: soffritto"),
+   list the recipes that use it.
    Read from recipes.json so the back-links can never go stale. */
 (() => {
   const slug = location.pathname.split("/").pop().replace(/\.html?$/, "");

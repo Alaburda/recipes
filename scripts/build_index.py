@@ -240,10 +240,10 @@ def load(path):
         "description": str(meta.get("description", "")),
         "tags": sorted({str(t).strip().lower() for t in meta["categories"] if str(t).strip()}),
         "ingredients": [i["text"] for i in ings],
-        # A recipe with `makes:` is a component -- something other recipes use as
-        # an ingredient, like soffritto or a brine.
+        # A recipe with `makes:` is itself an ingredient -- something other
+        # recipes use by name, like soffritto or a brine.
         "makes": makes,
-        "component": bool(makes),
+        "is_ingredient": bool(makes),
         "steps": len(bullets(secs["method"])),
         "image": image,
         "time": str(meta.get("time", "")),
@@ -255,7 +255,7 @@ def load(path):
 
 def resolve(recipes):
     """Bind sub-recipe references, then work out what each recipe contains once
-    its components are unpacked -- so filtering by 'carrot' also finds the sauce
+    its sub-recipes are unpacked -- so filtering by 'carrot' also finds the sauce
     that only mentions soffritto."""
     by_slug = {r["slug"]: r for r in recipes}
     errors = []
@@ -284,7 +284,7 @@ def resolve(recipes):
             by_slug[ref]["used_in"].append({"slug": r["slug"], "title": r["title"],
                                             "url": r["url"]})
 
-    # Transitive closure, with a cycle check -- a component that contains itself
+    # Transitive closure, with a cycle check -- an ingredient that contains itself
     # would otherwise recurse forever.
     deep, visiting = {}, set()
 
@@ -352,9 +352,9 @@ def main():
 
     tags = {t for r in out for t in r["tags"]}
     names = {n for r in out for n in r["names"]}
-    parts = {r["slug"] for r in out if r["component"]}
+    made = {r["slug"] for r in out if r["is_ingredient"]}
     print(f"[recipes] {len(out)} recipes indexed "
-          f"({len(tags)} tags, {len(names)} ingredients, {len(parts)} components) "
+          f"({len(tags)} tags, {len(names)} ingredients, {len(made)} of them recipes) "
           f"-> {OUT.name}")
     return 0
 

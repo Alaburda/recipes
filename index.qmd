@@ -17,7 +17,7 @@ page-layout: custom
     <div class="segmented" role="group" aria-label="Recipe kind">
       <button type="button" data-kind="all" class="on">All</button>
       <button type="button" data-kind="dish">Dishes</button>
-      <button type="button" data-kind="component">Components</button>
+      <button type="button" data-kind="ingredient">Ingredients</button>
     </div>
     <label class="switch">
       <input type="checkbox" id="deep" checked>
@@ -32,7 +32,7 @@ page-layout: custom
   </section>
 
   <section class="facet">
-    <h3>Ingredients</h3>
+    <h3>Made with</h3>
     <input id="ingq" type="search" placeholder="Find an ingredient…" autocomplete="off" aria-label="Filter the ingredient list">
     <div id="ings" class="checklist"></div>
   </section>

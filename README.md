@@ -22,7 +22,7 @@ time: 30 min
 servings: 2
 image: images/shakshuka.jpg      # optional
 source: https://example.com      # optional
-makes: tomato sauce              # only for components -- see below
+makes: tomato sauce              # only when the recipe is itself an ingredient
 ---
 ```
 
@@ -40,19 +40,23 @@ page, used only for filtering:
 - 400 g tin of plum tomatoes <!-- tomato -->
 ```
 
-**Some recipes are ingredients.** A recipe with a `makes:` line is a *component*:
-soffritto, a pickle brine, a stock. Use one in another recipe by linking to it in
-the ingredient list, and everything else follows automatically:
+**Some recipes are ingredients.** A recipe with a `makes:` line is one you cook in
+order to cook something else — soffritto, a pickle brine, a stock. Use one in
+another recipe by linking to it in the ingredient list, and the rest follows
+automatically:
 
 ```markdown
 - 200 g [soffritto](soffritto.qmd)
 ```
 
-The link works on the page; the card gets a "component" badge; the component's
+The link works on the page; the card gets an "ingredient" badge; soffritto's own
 page grows a "Used in" list; and filtering by *carrot* finds the tomato sauce
-made with soffritto, marked "via Soffritto". Turn that off with the
+made with soffritto, marked "via Soffritto". Turn that last part off with the
 **Look inside sub-recipes** switch in the sidebar. Circular references
 (A uses B uses A) fail the build.
+
+The sidebar's **All / Dishes / Ingredients** control narrows the list to one or
+the other when you only want to see things you would actually serve.
 
 **Nothing generated is committed.** `recipes.json`, which the browse page
 filters, is rebuilt from the `.qmd` files before every render. It cannot drift,
@@ -88,8 +92,8 @@ python scripts/build_index.py
 - **Source of truth** is `recipes/*.qmd`. Everything else is derived.
 - **Validation happens at build time.** `scripts/build_index.py` runs as Quarto's
   pre-render step and refuses to write anything if a recipe is missing a section,
-  links to a component that does not exist, points at a missing image, or has an
-  ingredient it cannot name. The message says which file and what to do.
+  links to an ingredient recipe that does not exist, points at a missing image,
+  or has an ingredient it cannot name. The message says which file and what to do.
 - **CI runs the same command.** [`.github/workflows/publish.yml`](.github/workflows/publish.yml)
   renders on every push and pull request, and deploys to Pages only from `main`.
   A broken recipe fails the PR, not the live site.

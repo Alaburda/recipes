@@ -39,8 +39,8 @@
                                 r.ingredients.join(" "), namesOf(r).join(" ")].join(" "));
 
   function matches(r) {
-    if (state.kind === "dish" && r.component) return false;
-    if (state.kind === "component" && !r.component) return false;
+    if (state.kind === "dish" && r.is_ingredient) return false;
+    if (state.kind === "ingredient" && !r.is_ingredient) return false;
     for (const t of state.tags) if (!r.tags.includes(t)) return false;
     const names = namesOf(r);
     for (const i of state.ings) if (!names.includes(i)) return false;
@@ -51,7 +51,7 @@
     return true;
   }
 
-  /* When a match only holds because a component was unpacked, say which one. */
+  /* When a match only holds because a sub-recipe was unpacked, say which one. */
   function via(r) {
     if (!state.deep || !state.ings.size) return null;
     const missing = [...state.ings].filter((i) => !r.names.includes(i));
@@ -88,7 +88,7 @@
       ${thumb(r)}
       <div class="cardbody">
         <div class="cardtitle">${esc(r.title)}${
-          r.component ? ' <span class="badge" title="Used as an ingredient in other recipes">component</span>' : ""}</div>
+          r.is_ingredient ? ' <span class="badge" title="This recipe is used as an ingredient in other recipes">ingredient</span>' : ""}</div>
         ${r.description ? `<p class="cardnote">${esc(r.description)}</p>` : ""}
         <div class="tagline">${tags}</div>
         ${v ? `<div class="viahint">via ${esc(v)}</div>` : ""}

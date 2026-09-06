@@ -1,7 +1,7 @@
 ---
 title: "Everyday Tomato Sauce"
 description: The one that goes on pasta, under eggs and into lasagne.
-categories: [component, dinner, pasta, vegan, batch-cook]
+categories: [dinner, pasta, vegan, batch-cook]
 makes: tomato sauce
 time: 40 min
 servings: 4

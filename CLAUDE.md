@@ -39,9 +39,11 @@ breaking them.
 - The ingredient name guesser is heuristics, not parsing. When it gets a line
   wrong, prefer an `<!-- override -->` comment in that recipe over widening the
   word lists — widening changes every existing recipe's facets.
-- Components are recipes with `makes:`. Referencing one is a markdown link to its
-  `.qmd`. Resolution, back-links and the transitive ingredient closure all happen
-  in `resolve()` in `scripts/build_index.py`.
+- A recipe that is itself an ingredient is one with a `makes:` line. Referencing
+  one is a markdown link to its `.qmd`. Resolution, back-links and the transitive
+  ingredient closure all happen in `resolve()` in `scripts/build_index.py`. The
+  JSON field is `is_ingredient`; avoid the bare word "ingredient" for it in code,
+  since that already means a line in an ingredient list.
 - `recipe: true` in `recipes/_metadata.yml` is what gates the Lua filter. A page
   outside `recipes/` will not get the photo/time header.
 
