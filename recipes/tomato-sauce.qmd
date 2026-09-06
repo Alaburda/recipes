@@ -1,0 +1,28 @@
+---
+title: "Everyday Tomato Sauce"
+description: The one that goes on pasta, under eggs and into lasagne.
+categories: [component, dinner, pasta, vegan, batch-cook]
+makes: tomato sauce
+time: 40 min
+servings: 4
+---
+
+## Ingredients
+
+- 2 tbsp olive oil
+- 200 g [soffritto](soffritto.qmd)
+- 3 cloves garlic, sliced
+- 2 × 400 g tins of plum tomatoes <!-- tomato -->
+- 1 tsp salt
+- A pinch of sugar
+- A handful of basil
+
+## Method
+
+1. Warm the oil in a wide pan and add the soffritto. If it is frozen, let it thaw and drive off its water over medium heat, 5 minutes.
+2. Add the garlic and cook for a minute, until fragrant.
+3. Tip in the tomatoes, crushing them in your hand as they go. Add the salt and sugar.
+4. Simmer uncovered for 25–30 minutes, stirring now and then, until the sauce no longer weeps water when you drag a spoon through it.
+5. Tear in the basil off the heat.
+
+Doubles happily. Freezes for three months.

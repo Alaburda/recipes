@@ -1,0 +1,6 @@
+/_site/
+/.quarto/
+recipes.json
+*_files/
+.DS_Store
+Thumbs.db

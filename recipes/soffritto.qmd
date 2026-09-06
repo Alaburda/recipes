@@ -1,0 +1,25 @@
+---
+title: "Soffritto"
+description: The slow-cooked onion, carrot and celery base that a hundred other things start from.
+categories: [component, base, vegan, batch-cook]
+makes: soffritto
+time: 45 min
+servings: about 400 g
+---
+
+## Ingredients
+
+- 4 tbsp olive oil
+- 2 onions, finely diced
+- 2 carrots, finely diced
+- 3 sticks celery, finely diced
+- 1 tsp salt
+
+## Method
+
+1. Dice everything to roughly the same small size. This matters more than knife skill — even pieces cook evenly.
+2. Warm the oil in a heavy pan over low heat. Add the vegetables and the salt.
+3. Cook very slowly for 40 minutes, stirring every few minutes. It should sigh, never sizzle hard.
+4. It is done when the mixture has collapsed to about a third of its volume, turned deep gold, and smells sweet.
+
+Freeze in 100 g blocks in an ice cube tray. Straight from frozen into a hot pan.

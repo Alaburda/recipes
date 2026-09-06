@@ -1,0 +1,21 @@
+<script>
+/* On a component page ("makes: soffritto"), list the recipes that use it.
+   Read from recipes.json so the back-links can never go stale. */
+(() => {
+  const slug = location.pathname.split("/").pop().replace(/\.html?$/, "");
+  if (!slug) return;
+  fetch("../recipes.json", { cache: "no-cache" })
+    .then((r) => (r.ok ? r.json() : Promise.reject()))
+    .then((data) => {
+      const me = data.recipes.find((r) => r.slug === slug);
+      if (!me || !me.used_in || !me.used_in.length) return;
+      const host = document.querySelector("main") || document.body;
+      const box = document.createElement("section");
+      box.className = "used-in";
+      box.innerHTML = "<h2>Used in</h2><ul>" + me.used_in.map((u) =>
+        `<li><a href="${u.slug}.html">${u.title.replace(/[<>&]/g, "")}</a></li>`).join("") + "</ul>";
+      host.appendChild(box);
+    })
+    .catch(() => {});
+})();
+</script>

@@ -1,0 +1,38 @@
+---
+title: "Name of the dish"
+description: One line. It shows under the title and on the card.
+categories: [breakfast, quick]
+time: 25 min
+servings: 2
+image: images/name-of-the-dish.jpg
+source: https://where-this-came-from.example.com
+---
+
+## Ingredients
+
+- 2 tbsp olive oil
+- 1 onion, finely sliced
+- 400 g tin of plum tomatoes <!-- tomato -->
+
+## Method
+
+1. First thing you do. One step per line.
+2. Second thing. **Bold**, *italic* and [links](https://example.com) all work.
+3. Third thing.
+
+A line that is not a numbered step becomes an ordinary paragraph.
+
+<!--
+  Copy this file to recipes/your-dish.qmd and edit it. The filename becomes the
+  URL, so keep it lowercase-with-hyphens.
+
+  Required: title, categories, a '## Ingredients' bullet list and a '## Method'
+  numbered list. Everything else is optional -- delete the lines you do not want.
+
+  `categories` are the filter tags. Reuse existing ones where you can; each new
+  one becomes a new chip in the sidebar.
+
+  The ingredient filter guesses a name from each bullet ("2 tbsp olive oil" ->
+  "olive oil"). When it guesses wrong, correct it with a trailing HTML comment
+  like the tomatoes above -- invisible on the page, used only for filtering.
+-->

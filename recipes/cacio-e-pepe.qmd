@@ -1,0 +1,25 @@
+---
+title: "Cacio e Pepe"
+description: Four ingredients, and all of the difficulty is in the last thirty seconds.
+categories: [dinner, pasta, vegetarian, quick]
+time: 20 min
+servings: 2
+source: https://en.wikipedia.org/wiki/Cacio_e_pepe
+---
+
+## Ingredients
+
+- 200 g spaghetti
+- 100 g pecorino romano, finely grated
+- 2 tsp black peppercorns, coarsely crushed
+- Salt
+
+## Method
+
+1. Boil the pasta in *less* water than usual and salt it lightly — you want the water starchy, and the cheese is already salty.
+2. Meanwhile, toast the crushed peppercorns in a dry pan for a minute, until fragrant. Add a ladle of pasta water and let it bubble.
+3. In a bowl, mix the pecorino with a few tablespoons of pasta water into a smooth paste. It should look like thin yoghurt, not grains in liquid.
+4. Drain the pasta a minute early, keeping a mug of the water, and toss it in the peppery pan **off the heat**.
+5. Wait 30 seconds for the pan to cool, then stir in the cheese paste, tossing hard and adding water a splash at a time until it turns glossy.
+
+If it splits into strings, the pan was too hot. Add cold water and keep tossing; it usually comes back.

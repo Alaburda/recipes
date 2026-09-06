@@ -1,0 +1,40 @@
+project:
+  type: website
+  output-dir: _site
+  # Reads every recipes/*.qmd and writes recipes.json, which the browse page
+  # filters client-side. Also validates the recipes and fails the render loudly
+  # if one is malformed -- so a broken recipe can never reach the site.
+  pre-render: scripts/build_index.py
+  resources:
+    - images/**
+    - recipes.json
+
+website:
+  title: "Recipes"
+  description: "A filterable box of favourite recipes."
+  navbar:
+    left:
+      - href: index.qmd
+        text: Browse
+    right:
+      - icon: github
+        href: https://github.com/Alaburda/recipes
+        aria-label: Source on GitHub
+  search:
+    location: navbar
+    type: overlay
+  page-footer:
+    center: "Built with [Quarto](https://quarto.org). Edit the recipes on [GitHub](https://github.com/Alaburda/recipes/tree/main/recipes)."
+
+format:
+  html:
+    theme:
+      - cosmo
+      - assets/theme.scss
+    css: assets/browse.css
+    toc: false
+    anchor-sections: false
+    link-external-newwindow: true
+
+filters:
+  - scripts/recipe-page.lua
