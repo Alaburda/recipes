@@ -66,15 +66,72 @@
 
   // ---- rendering --------------------------------------------------------
 
-  function placeholder(r, cls) {
-    const hue = [...r.slug].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
-    return `<div class="${cls} ph" style="background:linear-gradient(140deg,
-      hsl(${hue} 42% 52%), hsl(${(hue + 38) % 360} 46% 38%))"
-      aria-hidden="true">${esc(r.title.trim()[0] || "?")}</div>`;
+  /* ---- watercolour placeholders -------------------------------------
+     A recipe with no photo gets a painted wash instead of a grey box: two
+     pigments bled through an SVG turbulence filter, deterministic from the
+     slug, so a given recipe always looks the same. No image assets. */
+
+  const PIGMENTS = [
+    ["#2f6690", "#6ba3c7"],   // azulejo blue
+    ["#c1553a", "#e08a68"],   // terracotta
+    ["#cf9640", "#e6bd77"],   // ochre
+    ["#5f7d4a", "#9ab37c"],   // olive
+    ["#7e4a68", "#b083a0"],   // plum
+    ["#2f8378", "#74b3a8"],   // Atlantic green
+  ];
+
+  function hash(s) {
+    let h = 2166136261;
+    for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+
+  function watercolour(r) {
+    const h = hash(r.slug);
+    const pick = (n, lo, hi) => lo + ((h >>> (n * 3)) % 997) / 997 * (hi - lo);
+    // Two pigments, never from the same family, or every card turns out green.
+    const i = h % PIGMENTS.length;
+    const j = (i + 1 + ((h >>> 11) % (PIGMENTS.length - 1))) % PIGMENTS.length;
+    const a = PIGMENTS[i];
+    const b = PIGMENTS[j];
+    const id = `wc-${r.slug}`;
+    const initial = esc((r.title.trim()[0] || "?").toUpperCase());
+
+    return `<div class="thumb ph" aria-hidden="true">
+      <svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <filter id="${esc(id)}" x="-15%" y="-15%" width="130%" height="130%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.021 0.032"
+                          numOctaves="4" seed="${h % 500}" result="n"/>
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="17"
+                               xChannelSelector="R" yChannelSelector="G"/>
+            <feGaussianBlur stdDeviation="0.45"/>
+          </filter>
+        </defs>
+        <rect width="120" height="90" fill="var(--paper-3)"/>
+        <g class="wc" filter="url(#${esc(id)})">
+          <ellipse cx="${pick(1, 38, 74).toFixed(1)}" cy="${pick(2, 34, 54).toFixed(1)}"
+                   rx="${pick(3, 36, 48).toFixed(1)}" ry="${pick(4, 25, 34).toFixed(1)}"
+                   fill="${a[0]}" opacity="0.55"/>
+          <ellipse cx="${pick(5, 46, 86).toFixed(1)}" cy="${pick(6, 30, 58).toFixed(1)}"
+                   rx="${pick(7, 28, 42).toFixed(1)}" ry="${pick(8, 20, 30).toFixed(1)}"
+                   fill="${b[1]}" opacity="0.5" style="mix-blend-mode:multiply"/>
+          <ellipse cx="${pick(9, 24, 60).toFixed(1)}" cy="${pick(2, 40, 62).toFixed(1)}"
+                   rx="${pick(4, 16, 26).toFixed(1)}" ry="${pick(6, 12, 20).toFixed(1)}"
+                   fill="${a[1]}" opacity="0.45" style="mix-blend-mode:multiply"/>
+          <ellipse cx="${pick(1, 38, 74).toFixed(1)}" cy="${pick(2, 34, 54).toFixed(1)}"
+                   rx="${pick(3, 36, 48).toFixed(1)}" ry="${pick(4, 25, 34).toFixed(1)}"
+                   fill="none" stroke="${a[0]}" stroke-width="1.4" opacity="0.3"/>
+        </g>
+        <text x="60" y="45" dy="0.35em" text-anchor="middle" font-size="34"
+              font-family="Fraunces, Georgia, serif" font-weight="600"
+              fill="var(--azul-deep)" opacity="0.5">${initial}</text>
+      </svg>
+    </div>`;
   }
 
   function thumb(r) {
-    if (!r.image) return placeholder(r, "thumb");
+    if (!r.image) return watercolour(r);
     return `<img class="thumb" src="${esc(r.image)}" alt="" loading="lazy" decoding="async">`;
   }
 

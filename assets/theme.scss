@@ -1,62 +1,309 @@
 /*-- scss:defaults --*/
 
-$font-family-sans-serif: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !default;
-$primary: #ab4f1c !default;
-$body-bg: #fbfaf8 !default;
-$body-color: #1b1917 !default;
-$link-color: #ab4f1c !default;
-$navbar-bg: #fbfaf8 !default;
-$navbar-fg: #1b1917 !default;
-$border-color: #e7e1d6 !default;
-$headings-font-weight: 650 !default;
+$font-family-sans-serif: "Karla", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !default;
+$headings-font-family: "Fraunces", "Iowan Old Style", Palatino, Georgia, serif !default;
+$headings-font-weight: 600 !default;
+
+$primary: #2f6690 !default;
+$body-bg: #faf5ea !default;
+$body-color: #23303c !default;
+$link-color: #1f5478 !default;
+$navbar-bg: #faf5ea !default;
+$navbar-fg: #23303c !default;
+$border-color: #e3dbc9 !default;
 
 /*-- scss:rules --*/
 
-.navbar { border-bottom: 1px solid #e7e1d6; }
+/* ======================================================================
+   Palette. Azulejo blue on lime-washed plaster, with terracotta for the
+   things that need to shout. Defined once here; browse.css consumes them.
+   ====================================================================== */
+
+:root {
+  --paper:      #faf5ea;
+  --paper-2:    #fffdf6;
+  --paper-3:    #f2ecdd;
+  --ink:        #23303c;
+  --muted:      #6d7d89;
+  --line:       #e3dbc9;
+  --line-soft:  #f0e9d9;
+
+  --azul:       #2f6690;
+  --azul-deep:  #17405f;
+  --azul-soft:  #dde8f1;
+  --terra:      #c1553a;
+  --terra-soft: #f7e3da;
+  --ochre:      #cf9640;
+
+  --shadow: 0 1px 2px rgba(35, 48, 60, .05), 0 14px 30px -18px rgba(23, 64, 95, .35);
+
+  /* Hand-drawn azulejo: a diamond, corner arcs that close into circles
+     where four tiles meet, and a dot in the middle. */
+  --tile: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'><rect width='44' height='44' fill='%23f2ecdd'/><g fill='none' stroke='%232f6690' stroke-width='1.15' stroke-linejoin='round' opacity='0.9'><path d='M22 6 L38 22 L22 38 L6 22 Z'/><path d='M0 9 A9 9 0 0 0 9 0'/><path d='M35 0 A9 9 0 0 0 44 9'/><path d='M44 35 A9 9 0 0 0 35 44'/><path d='M9 44 A9 9 0 0 0 0 35'/></g><circle cx='22' cy='22' r='3.1' fill='%232f6690' opacity='0.8'/><g fill='%232f6690' opacity='0.45'><circle cx='22' cy='2.4' r='1.4'/><circle cx='22' cy='41.6' r='1.4'/><circle cx='2.4' cy='22' r='1.4'/><circle cx='41.6' cy='22' r='1.4'/></g></svg>");
+
+  /* Cold-press paper grain. One tile, rasterised once, laid over everything. */
+  --grain: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMDAnIGhlaWdodD0nMjAwJz48ZmlsdGVyIGlkPSdnJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC45JyBudW1PY3RhdmVzPSc0JyBzdGl0Y2hUaWxlcz0nc3RpdGNoJy8+PGZlQ29sb3JNYXRyaXggdHlwZT0nc2F0dXJhdGUnIHZhbHVlcz0nMCcvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPScyMDAnIGhlaWdodD0nMjAwJyBmaWx0ZXI9J3VybCgjZyknLz48L3N2Zz4=");
+  --grain-opacity: .32;
+
+  /* Washes that bleed in from the corners, like pigment settling. */
+  --wash-1: rgba(47, 102, 144, .16);
+  --wash-2: rgba(193, 85, 58, .11);
+  --wash-3: rgba(207, 150, 64, .10);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper:      #101820;
+    --paper-2:    #182028;
+    --paper-3:    #1d2731;
+    --ink:        #e9e3d6;
+    --muted:      #93a2ae;
+    --line:       #27333d;
+    --line-soft:  #1e2831;
+
+    --azul:       #7db4d8;
+    --azul-deep:  #a8cee7;
+    --azul-soft:  #1b2e3d;
+    --terra:      #e18d6b;
+    --terra-soft: #34211a;
+    --ochre:      #dcae62;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 16px 34px -20px rgba(0, 0, 0, .95);
+
+    --tile: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'><rect width='44' height='44' fill='%231d2731'/><g fill='none' stroke='%237db4d8' stroke-width='1.15' stroke-linejoin='round' opacity='0.75'><path d='M22 6 L38 22 L22 38 L6 22 Z'/><path d='M0 9 A9 9 0 0 0 9 0'/><path d='M35 0 A9 9 0 0 0 44 9'/><path d='M44 35 A9 9 0 0 0 35 44'/><path d='M9 44 A9 9 0 0 0 0 35'/></g><circle cx='22' cy='22' r='3.1' fill='%237db4d8' opacity='0.7'/><g fill='%237db4d8' opacity='0.4'><circle cx='22' cy='2.4' r='1.4'/><circle cx='22' cy='41.6' r='1.4'/><circle cx='2.4' cy='22' r='1.4'/><circle cx='41.6' cy='22' r='1.4'/></g></svg>");
+
+    --grain-opacity: .2;
+    --wash-1: rgba(125, 180, 216, .10);
+    --wash-2: rgba(225, 141, 107, .07);
+    --wash-3: rgba(220, 174, 98, .06);
+  }
+}
+
+/* ======================================================================
+   The paper the whole site sits on: washes underneath, grain on top.
+   Both fixed, both inert to the pointer.
+   ====================================================================== */
+
+body {
+  background-color: var(--paper);
+  position: relative;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  background:
+    radial-gradient(60rem 40rem at 8% -8%, var(--wash-1), transparent 62%),
+    radial-gradient(50rem 38rem at 104% 22%, var(--wash-2), transparent 60%),
+    radial-gradient(44rem 34rem at 40% 108%, var(--wash-3), transparent 58%);
+}
+
+body::after {
+  background-image: var(--grain);
+  background-size: 200px 200px;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: multiply;
+}
+
+@media (prefers-color-scheme: dark) {
+  body::after { mix-blend-mode: overlay; }
+}
+
+/* Everything real sits above the wash. */
+body > *:not(script) { position: relative; z-index: 1; }
+
+/* ======================================================================
+   Navbar and footer
+   ====================================================================== */
+
+.navbar {
+  background: transparent !important;
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 0 var(--azul-soft);
+  backdrop-filter: blur(6px);
+}
+
+.navbar-brand {
+  font-family: $headings-font-family;
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: -.01em;
+}
 .navbar-brand::before { content: "🍳"; margin-right: .45rem; }
 
-/* Recipe pages ---------------------------------------------------------- */
+.navbar .nav-link { font-size: .93rem; }
 
-#quarto-document-content > header#title-block-header h1 { letter-spacing: -.02em; }
+/* A skirting of tiles, the way a Lisbon building has one. The strip is drawn
+   full-bleed and clipped, so it never widens the page. */
+.nav-footer {
+  border-top: 0;
+  position: relative;
+  padding-top: 3.6rem;
+  overflow-x: clip;
+}
+.nav-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -50vw;
+  right: -50vw;
+  height: 44px;
+  background-image: var(--tile);
+  background-size: 44px 44px;
+  border-top: 2px solid var(--azul);
+  border-bottom: 1px solid var(--line);
+  opacity: .92;
+}
+.nav-footer .toc-actions,
+.nav-footer p { margin-bottom: 0; }
+.nav-footer { font-size: .82rem; color: var(--muted); }
+
+/* ======================================================================
+   Recipe pages
+   ====================================================================== */
+
+#title-block-header h1,
+#quarto-document-content h1 {
+  font-family: $headings-font-family;
+  font-weight: 600;
+  font-size: clamp(2rem, 1.4rem + 2vw, 2.9rem);
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  color: var(--azul-deep);
+}
+
+#title-block-header .description,
+#title-block-header p.subtitle {
+  font-family: $headings-font-family;
+  font-style: italic;
+  font-size: 1.06rem;
+  color: var(--muted);
+  font-weight: 400;
+}
 
 .recipe-hero {
   width: 100%;
   max-height: 340px;
   object-fit: cover;
-  border-radius: 12px;
-  margin-bottom: 1.1rem;
+  border-radius: 3px;
+  margin-bottom: 1.2rem;
+  box-shadow: var(--shadow);
+  /* The torn edge comes from filter: url(#deckle), applied as an inline style
+     by scripts/recipe-page.lua -- Quarto tries to resolve any url() it finds
+     in a stylesheet as a file path, so it cannot live here. */
 }
 
 .recipe-meta {
-  color: #6f6759;
-  font-size: .9rem;
-  margin: -.4rem 0 1.6rem;
+  color: var(--muted);
+  font-size: .88rem;
+  letter-spacing: .01em;
+  margin: -.3rem 0 1.9rem;
 }
+.recipe-meta a { color: var(--azul); }
 
+/* Section headings wear a tile. */
 main h2 {
-  font-size: .78rem;
-  text-transform: uppercase;
-  letter-spacing: .09em;
-  color: #6f6759;
-  margin-top: 2rem;
-  border-bottom: 1px solid #e7e1d6;
-  padding-bottom: .4rem;
+  font-family: $headings-font-family;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--azul-deep);
+  margin-top: 2.4rem;
+  padding-bottom: .45rem;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+}
+main h2::before {
+  content: "";
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border: 1.4px solid var(--azul);
+  transform: rotate(45deg);
+  border-radius: 1px;
+  opacity: .75;
 }
 
-main h2 + ul { list-style: none; padding-left: 0; }
+/* The ingredient list reads as a list, not as prose. */
+main h2 + ul { list-style: none; padding-left: 0; margin-top: .9rem; }
 main h2 + ul li {
-  padding: .34rem 0;
-  border-bottom: 1px solid #f0ebe2;
+  padding: .4rem 0 .4rem 1.4rem;
+  border-bottom: 1px dashed var(--line);
+  position: relative;
+}
+main h2 + ul li::before {
+  content: "";
+  position: absolute;
+  left: .25rem;
+  top: .95rem;
+  width: 5px;
+  height: 5px;
+  background: var(--azul);
+  opacity: .5;
+  transform: rotate(45deg);
 }
 main h2 + ul li:last-child { border-bottom: 0; }
 
-main ol > li { margin-bottom: .7rem; }
+main ol { counter-reset: step; list-style: none; padding-left: 0; margin-top: 1rem; }
+main ol > li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 2.6rem;
+  margin-bottom: 1.05rem;
+  line-height: 1.65;
+}
+main ol > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -.1rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  font-family: $headings-font-family;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--azul-deep);
+  background: var(--azul-soft);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(47, 102, 144, .22);
+}
+
+/* A trailing paragraph after the method is a cook's aside. */
+main ol + p {
+  margin-top: 1.6rem;
+  padding: .9rem 1.1rem;
+  background: var(--paper-3);
+  border-left: 3px solid var(--ochre);
+  border-radius: 0 4px 4px 0;
+  font-size: .94rem;
+  color: var(--muted);
+  font-style: italic;
+}
 
 .used-in {
-  margin-top: 2.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e7e1d6;
+  margin-top: 3rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--line);
 }
-.used-in h2 { border: 0; margin-top: 0; }
-.used-in ul { list-style: none; padding-left: 0; }
-.used-in li { padding: .2rem 0; border: 0; }
+.used-in h2 { border: 0; margin-top: 0; padding-bottom: 0; }
+.used-in ul { list-style: none; padding-left: 0; margin-top: .6rem; }
+.used-in li { padding: .18rem 0; border: 0; }
+.used-in a { color: var(--azul); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+/* ======================================================================
+   Search overlay, so it does not arrive in stock Bootstrap blue.
+   ====================================================================== */
+
+.aa-DetachedSearchButton { border-color: var(--line); background: var(--paper-2); }
+.aa-Panel { border-radius: 6px; }

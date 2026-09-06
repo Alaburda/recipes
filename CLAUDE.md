@@ -25,7 +25,9 @@ breaking them.
 | Filtering, sorting, cards, keyboard | `assets/browse.js` |
 | Browse page markup | `index.qmd` (one `{=html}` block — keep it that way) |
 | Browse page styles | `assets/browse.css` (all rules scoped under `.browse`) |
-| Recipe page + site styles | `assets/theme.scss` |
+| Palette, paper, tiles, recipe pages | `assets/theme.scss` |
+| Watercolour card placeholders | `watercolour()` in `assets/browse.js` |
+| SVG filter definitions | `assets/svg-filters.html` |
 | Ingredient name guessing | `UNITS` / `PREP` / `singular()` in `scripts/build_index.py` |
 | Front matter → rendered page | `scripts/recipe-page.lua` |
 | "Used in" back-links | `assets/recipe-footer.html` |
@@ -46,6 +48,16 @@ breaking them.
   since that already means a line in an ingredient list.
 - `recipe: true` in `recipes/_metadata.yml` is what gates the Lua filter. A page
   outside `recipes/` will not get the photo/time header.
+- **Quarto resolves every `url(...)` in a stylesheet as a file path**, and fails
+  the render when the file is missing. That rules out two things in `.scss`/`.css`:
+  a bare fragment like `filter: url(#deckle)` (apply it as an inline style instead
+  — `scripts/recipe-page.lua` does), and a `url(#...)` *nested inside* an SVG data
+  URI (base64-encode that data URI instead — `--grain` is). Plain data URIs with
+  no inner `url()`, like `--tile`, are fine.
+- The theme is procedural: the azulejo tile, the paper grain and the card
+  watercolours are all generated SVG, so there are no image assets to keep. Colour
+  lives in one place — the `:root` block in `assets/theme.scss` — and `browse.css`
+  only consumes those tokens. Change a colour there, not in two files.
 
 ## Style
 

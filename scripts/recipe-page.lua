@@ -27,7 +27,8 @@ function Pandoc(doc)
     -- Recipe pages always live one level down, in recipes/.
     if not image:match("^https?://") then image = "../" .. image end
     head:insert(pandoc.Para({
-      pandoc.Image({}, image, "", pandoc.Attr("", { "recipe-hero" }))
+      pandoc.Image({}, image, "", pandoc.Attr("", { "recipe-hero" },
+        { { "style", "filter:url(#deckle)" } }))
     }))
   end
 

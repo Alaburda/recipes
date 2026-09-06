@@ -70,7 +70,17 @@ hotlinked images rot, get blocked, or silently change. A photo you own in the
 repo is a photo that still loads in five years. These are small files — a few
 hundred recipes at ~200 KB each is a repo Git will not notice.
 
-A recipe with no photo gets a coloured tile with its initial, which is fine.
+A recipe with no photo gets a watercolour wash instead — two pigments bled
+through an SVG filter, picked from the recipe's name, so a given recipe always
+paints the same. Nothing to generate and nothing to store.
+
+## The look
+
+Azulejo blue on lime-washed plaster, with terracotta where something needs to
+shout. The tile pattern along the footer, the paper grain over everything, and
+the card washes are all generated SVG — there is not one image file in the
+theme. Fraunces for headings, Karla for everything else. Dark mode is the same
+palette on toned paper, and follows the system setting.
 
 ## Running it
 
