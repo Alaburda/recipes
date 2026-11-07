@@ -2,7 +2,6 @@
 title: "All-Purpose Pickle Brine"
 description: One jar of brine, endless quick pickles. Keeps for a month.
 categories: [base, vegan, make-ahead, no-cook]
-makes: pickle brine
 time: 10 min
 servings: 500 ml
 ---

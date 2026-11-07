@@ -2,7 +2,6 @@
 title: "Everyday Tomato Sauce"
 description: The one that goes on pasta, under eggs and into lasagne.
 categories: [dinner, pasta, vegan, batch-cook]
-makes: tomato sauce
 time: 40 min
 servings: 4
 ---
@@ -10,7 +9,7 @@ servings: 4
 ## Ingredients
 
 - 2 tbsp olive oil
-- 200 g [soffritto](soffritto.qmd)
+- 200 g soffritto
 - 3 cloves garlic, sliced
 - 2 × 400 g tins of plum tomatoes <!-- tomato -->
 - 1 tsp salt

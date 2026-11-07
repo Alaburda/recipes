@@ -9,7 +9,7 @@ servings: 1 jar
 ## Ingredients
 
 - 2 red onions, very thinly sliced
-- 300 ml [pickle brine](pickle-brine.qmd)
+- 300 ml pickle brine
 - 1 tsp coriander seeds
 - 1 dried chilli
 

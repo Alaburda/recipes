@@ -26,13 +26,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      - uses: quarto-dev/quarto-actions/setup@v2
+      # The build script is also the validator: a malformed recipe fails here
+      # with a readable message instead of quietly shipping. Pull requests run
+      # this and stop -- build only, no deploy.
+      - name: Build the index
+        run: python scripts/build_index.py
 
-      # Runs scripts/build_index.py first (project pre-render), so a malformed
-      # recipe fails the build here with a readable message instead of quietly
-      # shipping. Pull requests stop after this step -- build only, no deploy.
-      - name: Render site
-        run: quarto render
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          cp index.html recipes.json _site/
+          cp -r assets _site/
 
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'

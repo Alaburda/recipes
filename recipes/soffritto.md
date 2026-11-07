@@ -2,7 +2,6 @@
 title: "Soffritto"
 description: The slow-cooked onion, carrot and celery base that a hundred other things start from.
 categories: [base, vegan, batch-cook]
-makes: soffritto
 time: 45 min
 servings: about 400 g
 ---

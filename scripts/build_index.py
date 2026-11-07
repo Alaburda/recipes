@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
-"""Read recipes/*.qmd and write recipes.json, the index the browse page filters.
+"""Read recipes/*.md and write recipes.json, the index the page searches.
 
-Quarto runs this automatically before every render (project: pre-render in
-_quarto.yml), so the index can never drift from the recipes. It is also worth
-running on its own while writing a recipe, to check it parses:
+Run it before serving the site, and whenever you touch a recipe:
 
     python scripts/build_index.py
 
-Stdlib only, so CI needs nothing beyond Python. Files starting with "_" are
-skipped -- that is how _template.qmd stays out of the site.
+It is also the validator: it prints every problem it finds and writes nothing
+if there are any. Stdlib only, so CI needs nothing beyond Python. Files
+starting with "_" are skipped -- that is how _template.md stays out of the site.
 
-Each recipe is one .qmd: YAML front matter for the facts, a '## Ingredients'
-bullet list, and a '## Method' numbered list. The ingredient *name* used for
-filtering is guessed from each line ("2 tbsp olive oil, warmed" -> "olive oil");
-when the guess is wrong, override it with a trailing HTML comment, which is
-invisible in the rendered page:
+Each recipe is one .md: YAML front matter for the facts, a '## Ingredients'
+bullet list, and a '## Method' numbered list. Only `title` and those two
+sections are required.
+
+The ingredient *name* used for searching is guessed from each line ("2 tbsp
+olive oil, warmed" -> "olive oil"). The guess is a heuristic, not a parser, so
+when it gets one wrong, correct it with a trailing HTML comment -- invisible on
+the page, used only for searching:
 
     - 400 g tin of plum tomatoes <!-- tomato -->
+
+A bad guess never fails the build; it just leaves that line searchable by its
+own words instead.
 """
 
 import json
@@ -29,8 +34,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 RECIPE_DIR = ROOT / "recipes"
 OUT = ROOT / "recipes.json"
-
-REQUIRED = ("title", "categories")
 
 # Tokens dropped from the front of an ingredient line when guessing its name.
 UNITS = {
@@ -58,10 +61,9 @@ PREP = {
 
 QTY = re.compile(r"^[\d¼-¾⅐-⅞./\-–+]+$")
 OVERRIDE = re.compile(r"<!--\s*(.+?)\s*-->")
-# An ingredient line that links to another recipe -- "3 tbsp [soffritto](soffritto.qmd)"
-# -- is a sub-recipe reference, not just text.
-REF = re.compile(r"\[([^\]]*)\]\(\s*(?:\./)?(?:recipes/)?([\w\-.]+)\.qmd[^)]*\)")
 MDLINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+BULLET = re.compile(r"^\s*(?:\d+[.)]|[-*+])\s+(.*)$")
+HEADING = re.compile(r"^#{2,3}\s+(.*)$")
 
 
 class BuildError(Exception):
@@ -69,8 +71,7 @@ class BuildError(Exception):
 
 
 # --------------------------------------------------------------------------
-# Front matter. A small YAML subset -- enough for the fields recipes use, and
-# it steps over anything nested rather than pretending to understand it.
+# Front matter. A small YAML subset -- enough for the fields recipes use.
 # --------------------------------------------------------------------------
 
 def _scalar(raw):
@@ -115,7 +116,7 @@ def split_front_matter(text, where):
                 data[key].append(_scalar(raw.lstrip()[2:]))
             continue
         if indented:
-            continue                      # nested option block -- Quarto's business
+            continue
         if ":" not in raw:
             raise BuildError(f"{where}:{n}: expected 'key: value', got {raw.strip()!r}")
         key, _, val = raw.partition(":")
@@ -136,7 +137,7 @@ def split_front_matter(text, where):
 def sections(body):
     out, name, buf = {}, None, []
     for line in body.splitlines():
-        m = re.match(r"^#{2,3}\s+(.*)$", line.strip())
+        m = HEADING.match(line.strip())
         if m:
             if name:
                 out[name] = buf
@@ -150,8 +151,19 @@ def sections(body):
 
 def bullets(lines):
     return [m.group(1).strip()
-            for m in (re.match(r"^\s*(?:\d+[.)]|[-*+])\s+(.*)$", l) for l in lines)
+            for m in (BULLET.match(l) for l in lines)
             if m and m.group(1).strip()]
+
+
+def trailing_note(lines):
+    """Prose after the numbered steps -- the 'keeps for three days' line."""
+    tail, seen_bullet = [], False
+    for line in lines:
+        if BULLET.match(line):
+            seen_bullet, tail = True, []
+        elif seen_bullet and line.strip():
+            tail.append(line.strip())
+    return " ".join(tail)
 
 
 IRREGULAR = {
@@ -197,14 +209,22 @@ def slugify(s):
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", s.lower())).strip("-")
 
 
+def plain(raw):
+    """An ingredient line as it should read on the page."""
+    return MDLINK.sub(r"\1", OVERRIDE.sub("", raw)).strip()
+
+
 def load(path):
     where = path.relative_to(ROOT).as_posix()
     meta, body = split_front_matter(path.read_text(encoding="utf-8"), where)
 
-    missing = [f for f in REQUIRED if not meta.get(f)]
-    if missing:
-        raise BuildError(f"{where}: missing required field(s): {', '.join(missing)}")
-    if not isinstance(meta["categories"], list):
+    if not str(meta.get("title", "")).strip():
+        raise BuildError(f"{where}: missing a 'title'")
+
+    cats = meta.get("categories", [])
+    if isinstance(cats, str):
+        cats = [cats]
+    if not isinstance(cats, list):
         raise BuildError(f"{where}: 'categories' must be a list, e.g. [breakfast, quick]")
 
     secs = sections(body)
@@ -213,102 +233,38 @@ def load(path):
     if "method" not in secs:
         raise BuildError(f"{where}: no '## Method' section")
 
-    ings = []
-    for raw in bullets(secs["ingredients"]):
-        text = MDLINK.sub(r"\1", OVERRIDE.sub("", raw)).strip()
-        ref = REF.search(raw)
-        if ref:
-            # Name is filled in later, from whatever that recipe says it makes.
-            ings.append({"text": text, "name": None, "ref": slugify(ref.group(2))})
-            continue
-        name = ingredient_name(raw)
-        if not name:
-            raise BuildError(f"{where}: cannot work out an ingredient name from {raw!r} "
-                             f"-- add an override comment, e.g. '{text} <!-- salt -->'")
-        ings.append({"text": text, "name": name, "ref": None})
-    if not ings:
+    lines = bullets(secs["ingredients"])
+    if not lines:
         raise BuildError(f"{where}: the '## Ingredients' section has no bullet list")
-    if not bullets(secs["method"]):
+    steps = bullets(secs["method"])
+    if not steps:
         raise BuildError(f"{where}: the '## Method' section has no numbered steps")
 
-    image = str(meta.get("image", "")).strip()
-    makes = str(meta.get("makes", "")).strip().lower()
+    ingredients, names = [], set()
+    for raw in lines:
+        text = plain(raw)
+        ingredients.append(text)
+        # A line the guesser cannot name stays searchable by its own words.
+        names.add(ingredient_name(raw) or text.lower())
+
+    link = str(meta.get("link", meta.get("source", ""))).strip()
+    if link and not link.startswith(("http://", "https://")):
+        raise BuildError(f"{where}: 'link' must be a full http(s) URL, got {link!r}")
+
     return {
         "slug": slugify(path.stem),
-        "url": f"recipes/{path.stem}.html",
         "title": str(meta["title"]),
         "description": str(meta.get("description", "")),
-        "tags": sorted({str(t).strip().lower() for t in meta["categories"] if str(t).strip()}),
-        "ingredients": [i["text"] for i in ings],
-        # A recipe with `makes:` is itself an ingredient -- something other
-        # recipes use by name, like soffritto or a brine.
-        "makes": makes,
-        "is_ingredient": bool(makes),
-        "steps": len(bullets(secs["method"])),
-        "image": image,
+        "tags": sorted({str(t).strip().lower() for t in cats if str(t).strip()}),
+        "ingredients": ingredients,
+        "names": sorted(n for n in names if n),
+        "steps": steps,
+        "note": trailing_note(secs["method"]),
         "time": str(meta.get("time", "")),
         "servings": str(meta.get("servings", "")),
+        "link": link,
         "file": where,
-        "_ings": ings,
     }
-
-
-def resolve(recipes):
-    """Bind sub-recipe references, then work out what each recipe contains once
-    its sub-recipes are unpacked -- so filtering by 'carrot' also finds the sauce
-    that only mentions soffritto."""
-    by_slug = {r["slug"]: r for r in recipes}
-    errors = []
-
-    for r in recipes:
-        for ing in r["_ings"]:
-            if not ing["ref"]:
-                continue
-            target = by_slug.get(ing["ref"])
-            if target is None:
-                errors.append(f"{r['file']}: links to '{ing['ref']}.qmd', which does not exist")
-                ing["name"] = ing["text"].lower()
-                continue
-            if not target["makes"]:
-                errors.append(f"{r['file']}: uses {target['file']} as an ingredient, so that "
-                              f"file needs a 'makes:' line saying what it produces")
-            ing["name"] = target["makes"] or target["title"].lower()
-
-    for r in recipes:
-        r["names"] = sorted({i["name"] for i in r["_ings"] if i["name"]})
-        r["uses"] = sorted({i["ref"] for i in r["_ings"] if i["ref"] and i["ref"] in by_slug})
-        r["used_in"] = []
-
-    for r in recipes:
-        for ref in r["uses"]:
-            by_slug[ref]["used_in"].append({"slug": r["slug"], "title": r["title"],
-                                            "url": r["url"]})
-
-    # Transitive closure, with a cycle check -- an ingredient that contains itself
-    # would otherwise recurse forever.
-    deep, visiting = {}, set()
-
-    def expand(slug, trail):
-        if slug in deep:
-            return deep[slug]
-        if slug in visiting:
-            errors.append(f"circular sub-recipe: {' -> '.join(trail + [slug])}")
-            return set()
-        visiting.add(slug)
-        r = by_slug[slug]
-        acc = set(r["names"])
-        for ref in r["uses"]:
-            acc |= expand(ref, trail + [slug])
-        visiting.discard(slug)
-        deep[slug] = acc
-        return acc
-
-    for r in recipes:
-        r["deep"] = sorted(expand(r["slug"], []))
-        r["used_in"].sort(key=lambda u: u["title"].lower())
-        del r["_ings"]
-
-    return errors
 
 
 def main():
@@ -317,7 +273,7 @@ def main():
         return 1
 
     out, errors, seen = [], [], {}
-    for p in sorted(RECIPE_DIR.glob("*.qmd")):
+    for p in sorted(RECIPE_DIR.glob("*.md")):
         if p.name.startswith("_"):
             continue
         try:
@@ -329,12 +285,10 @@ def main():
             errors.append(f"{r['file']}: slug '{r['slug']}' already used by {seen[r['slug']]}")
             continue
         seen[r["slug"]] = r["file"]
-        external = r["image"].startswith(("http://", "https://"))
-        if r["image"] and not external and not (ROOT / r["image"]).exists():
-            errors.append(f"{r['file']}: image '{r['image']}' is not in the repo")
         out.append(r)
 
-    errors += resolve(out)
+    if not out and not errors:
+        errors.append("no recipes found in recipes/ -- nothing to build")
 
     if errors:
         print(f"\n{len(errors)} problem(s) in the recipes -- nothing was written:\n",
@@ -352,10 +306,8 @@ def main():
 
     tags = {t for r in out for t in r["tags"]}
     names = {n for r in out for n in r["names"]}
-    made = {r["slug"] for r in out if r["is_ingredient"]}
     print(f"[recipes] {len(out)} recipes indexed "
-          f"({len(tags)} tags, {len(names)} ingredients, {len(made)} of them recipes) "
-          f"-> {OUT.name}")
+          f"({len(tags)} tags, {len(names)} ingredients) -> {OUT.name}")
     return 0
 
 

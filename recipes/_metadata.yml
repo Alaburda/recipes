@@ -1,9 +1,0 @@
-# Applies to every recipe page in this folder.
-# `recipe: true` is what tells scripts/recipe-page.lua to render the photo and
-# the time/servings line out of the front matter.
-recipe: true
-
-format:
-  html:
-    include-after-body:
-      - ../assets/recipe-footer.html

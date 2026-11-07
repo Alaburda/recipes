@@ -1,0 +1,465 @@
+/* Recipes — a mobile-first list over a white ground.
+   Palette pulled from three Fauvist still lifes: clear blue, amber, emerald
+   and a pomegranate red, used unmuted and sparingly. No dark mode on purpose. */
+
+:root {
+  --white:      #ffffff;
+  --ink:        #231c18;   /* warm near-black; pure black fights the accents */
+  --muted:      #7a6e66;
+  --hairline:   #ede8e1;
+  --wash:       #faf7f3;   /* the only off-white, for pressed states */
+
+  --pomegranate: #c8102e;
+  --blue:        #0b63ce;
+  --amber:       #ec8a1c;
+  --emerald:     #1e9b74;
+
+  --page:  640px;
+  --gutter: 16px;
+  --row:   52px;
+
+  --serif: "Fraunces", Georgia, serif;
+  --sans:  "Karla", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+/* Several things here set display, which would otherwise beat [hidden]. */
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
+}
+
+/* Scroll lock while the sheet is up. position:fixed rather than
+   overflow:hidden, which iOS Safari ignores on the body. */
+body.locked {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- masthead */
+
+.masthead {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 28px var(--gutter) 14px;
+}
+
+.masthead h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--pomegranate);
+}
+
+/* --------------------------------------------------------------- searchbar */
+
+.searchbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--white);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.searchbar .field {
+  position: relative;
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 8px var(--gutter) 10px;
+  display: flex;
+  align-items: center;
+}
+
+.glass {
+  position: absolute;
+  left: calc(var(--gutter) + 12px);
+  width: 17px;
+  height: 17px;
+  stroke: var(--muted);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+#q {
+  width: 100%;
+  /* 16px minimum, or iOS Safari zooms the page on focus */
+  font: 500 16px/1.2 var(--sans);
+  color: var(--ink);
+  background: var(--wash);
+  border: 1.5px solid var(--hairline);
+  border-radius: 10px;
+  padding: 11px 40px 11px 38px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+#q::placeholder { color: var(--muted); }
+#q::-webkit-search-cancel-button { display: none; }
+
+#q:focus {
+  outline: none;
+  background: var(--white);
+  border-color: var(--pomegranate);
+  box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.14);
+}
+
+.clear {
+  position: absolute;
+  right: calc(var(--gutter) + 4px);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.clear svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; }
+.clear:active { background: var(--hairline); }
+
+/* -------------------------------------------------------------------- list */
+
+main {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 0 var(--gutter) 40px;
+}
+
+.list { list-style: none; margin: 0; padding: 0; }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--row);
+  padding: 7px 4px 7px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  border-left: 3px solid var(--accent, var(--hairline));
+  border-radius: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.row:active { background: var(--wash); }
+
+.row:focus-visible {
+  outline: 2px solid var(--pomegranate);
+  outline-offset: -2px;
+}
+
+.row .text { min-width: 0; flex: 1; }
+
+.row .name {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+
+.row .meta {
+  display: block;
+  margin-top: 1px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+.row mark {
+  background: rgba(200, 16, 46, 0.14);
+  color: var(--pomegranate);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.play {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  fill: var(--pomegranate);
+  opacity: 0.85;
+}
+
+.chev {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  stroke: var(--hairline);
+  stroke-width: 2.4;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.empty {
+  margin: 48px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* ------------------------------------------------------------------- sheet */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(35, 28, 24, 0.38);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.scrim.in { opacity: 1; }
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  max-width: var(--page);
+  height: 92dvh;
+  margin: 0 auto;
+  background: var(--white);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -2px 34px rgba(35, 28, 24, 0.2);
+  transform: translateY(100%);
+  transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.sheet.in { transform: translateY(0); }
+.sheet.dragging { transition: none; }
+
+/* The handle is a real button: tapping the strip above the sheet closes it. */
+.grab {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.grab span {
+  display: block;
+  width: 38px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--hairline);
+}
+
+.sheet-head {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 2px var(--gutter) 12px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sheet-heading { flex: 1; min-width: 0; }
+
+.sheet-head h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.sheet-meta {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-top: -2px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--wash);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.close svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; }
+.close:active { background: var(--hairline); }
+
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 16px var(--gutter) 24px;
+}
+
+.sheet-body h3 {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent, var(--pomegranate));
+}
+
+.sheet-body h3 + * { margin-top: 0; }
+.sheet-body section + section { margin-top: 26px; }
+
+.ings { list-style: none; margin: 0; padding: 0; }
+
+.ings li {
+  position: relative;
+  padding: 6px 0 6px 18px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 15.5px;
+}
+
+.ings li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 14px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent, var(--pomegranate));
+}
+
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+
+.steps li {
+  position: relative;
+  counter-increment: step;
+  padding: 0 0 16px 32px;
+  font-size: 15.5px;
+  line-height: 1.55;
+}
+
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent, var(--pomegranate));
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.steps li:last-child { padding-bottom: 0; }
+
+.note {
+  margin: 26px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--accent, var(--pomegranate));
+  background: var(--wash);
+  border-radius: 0 8px 8px 0;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+
+.sheet-body a { color: var(--blue); text-underline-offset: 2px; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 20px;
+  padding: 8px 14px 8px 11px;
+  border: 1.5px solid var(--hairline);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.chip svg { width: 15px; height: 15px; flex: none; }
+.chip.video { border-color: rgba(200, 16, 46, 0.3); color: var(--pomegranate); }
+.chip.video svg { fill: var(--pomegranate); }
+.chip.site svg { stroke: var(--blue); stroke-width: 2; fill: none; }
+.chip:active { background: var(--wash); }
+
+.sheet-actions {
+  flex: none;
+  display: flex;
+  gap: 10px;
+  padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--hairline);
+  background: var(--white);
+}
+
+.action {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border: 1.5px solid var(--hairline);
+  border-radius: 11px;
+  background: var(--white);
+  font: 600 15px var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.action svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1.9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.action:active { background: var(--wash); }
+.action.done { border-color: var(--emerald); color: var(--emerald); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .scrim { transition: none; }
+}
