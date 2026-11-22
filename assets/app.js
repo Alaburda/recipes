@@ -1,4 +1,4 @@
-/* Recipes — one list, one sheet.
+/* Recipes — one list, one sheet, two languages.
    Everything here is presentation: recipes.json is the content, built from
    recipes/*.md by scripts/build_index.py. No framework, no build step. */
 
@@ -19,12 +19,119 @@
   let depth = 0;        // history entries we pushed, so Close knows what to do
   let scrollY = 0;
 
+  /* ------------------------------------------------------------ languages */
+
+  const LANGS = ["en", "lt"];
+  const STORE = "recipes.lang";
+
+  // Lithuanian counts in threes: 1 porcija, 2–9 porcijos, 0 and the teens
+  // porcijų. Worth getting right -- it is on screen under every title.
+  function porcijos(n) {
+    const x = parseInt(n, 10);
+    if (!Number.isFinite(x)) return "porcijos";
+    const ones = x % 10, tens = x % 100;
+    if (ones === 1 && tens !== 11) return "porcija";
+    if (ones >= 2 && ones <= 9 && !(tens >= 11 && tens <= 19)) return "porcijos";
+    return "porcijų";
+  }
+
+  const UI = {
+    en: {
+      brand: "Recipes",
+      language: "Language",
+      search: "Search recipes",
+      clear: "Clear search",
+      close: "Close recipe",
+      ingredients: "Ingredients",
+      method: "Method",
+      watch: "Watch",
+      copy: "Copy", copied: "Copied", copyFail: "Press ⌘C",
+      share: "Share", shared: "Link copied", shareFail: "Could not copy",
+      serves: (n) => `serves ${n}`,
+      nothing: (q) => `Nothing matches “${q}”.`,
+      fallback: "Not written in English yet — showing the Lithuanian.",
+      noServer: "Open this through a web server — a file:// page cannot load recipes.json.",
+      noLoad: (m) => `Could not load the recipes (${m}).`,
+    },
+    lt: {
+      brand: "Receptai",
+      language: "Kalba",
+      search: "Ieškoti receptų",
+      clear: "Išvalyti paiešką",
+      close: "Uždaryti receptą",
+      ingredients: "Sudedamosios dalys",
+      method: "Gaminimas",
+      watch: "Žiūrėti",
+      copy: "Kopijuoti", copied: "Nukopijuota", copyFail: "Spauskite ⌘C",
+      share: "Dalintis", shared: "Nuoroda nukopijuota", shareFail: "Nepavyko nukopijuoti",
+      serves: (n) => `${n} ${porcijos(n)}`,
+      nothing: (q) => `Pagal „${q}“ nieko nerasta.`,
+      fallback: "Šis receptas dar neišverstas — rodoma angliškai.",
+      noServer: "Atidarykite per interneto serverį — file:// puslapis negali įkelti recipes.json.",
+      noLoad: (m) => `Nepavyko įkelti receptų (${m}).`,
+    },
+  };
+
+  // The query string carries the language, so a link opens in the language it
+  // was sent in. The hash stays what it has always been: which recipe is open.
+  function firstLang() {
+    const asked = new URLSearchParams(location.search).get("lang");
+    if (LANGS.includes(asked)) return asked;
+    try {
+      const saved = localStorage.getItem(STORE);
+      if (LANGS.includes(saved)) return saved;
+    } catch { /* private mode */ }
+    return (navigator.language || "en").toLowerCase().startsWith("lt") ? "lt" : "en";
+  }
+
+  let lang = firstLang();
+  let collator = new Intl.Collator(lang, { sensitivity: "base" });
+  const T = () => UI[lang];
+
+  // Everything a recipe says, in the chosen language or the one it has.
+  const said = (r) => r[lang] || r[r.langs[0]];
+
+  function stampURL() {
+    const url = new URL(location.href);
+    url.searchParams.set("lang", lang);
+    history.replaceState(history.state, "", url);
+  }
+
+  function setLang(next) {
+    if (!LANGS.includes(next) || next === lang) return;
+    lang = next;
+    collator = new Intl.Collator(lang, { sensitivity: "base" });
+    try { localStorage.setItem(STORE, lang); } catch { /* private mode */ }
+    stampURL();
+    applyChrome();
+    render();
+    if (open) fill(bySlug.get(open));
+  }
+
+  // Every string that is not a recipe.
+  function applyChrome() {
+    const t = T();
+    document.documentElement.lang = lang;
+    $("brand").textContent = t.brand;
+    $("langs").setAttribute("aria-label", t.language);
+    for (const b of $("langs").querySelectorAll(".lang")) {
+      b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
+    }
+    input.placeholder = t.search;
+    input.setAttribute("aria-label", t.search);
+    clearBtn.setAttribute("aria-label", t.clear);
+    $("close").setAttribute("aria-label", t.close);
+    $("grab").setAttribute("aria-label", t.close);
+    if (!open) document.title = t.brand;
+  }
+
   /* ------------------------------------------------------------- helpers */
 
   const esc = (s) => s.replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  // Lowercase and strip accents, so "crème" matches "creme".
+  // Lowercase and strip accents, so "crème" matches "creme" and "vištiena"
+  // matches "vistiena" — a keyboard without the Lithuanian letters still works.
   const fold = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
   const ACCENTS = ["--blue", "--amber", "--emerald", "--pomegranate"];
@@ -53,14 +160,21 @@
 
   /* -------------------------------------------------------------- search */
 
+  // Every language at once, so a Lithuanian word finds a recipe you are
+  // reading in English and the other way round.
   function haystack(r) {
-    return fold([r.title, r.description, r.tags.join(" "),
-                 r.names.join(" "), r.ingredients.join(" ")].join(" \u0001 "));
+    const parts = [];
+    for (const l of r.langs) {
+      const d = r[l];
+      parts.push(d.title, d.description, d.tags.join(" "),
+                 d.names.join(" "), d.ingredients.join(" "));
+    }
+    return fold(parts.join(" \u0001 "));
   }
 
   function match(query) {
     const terms = fold(query).split(/\s+/).filter(Boolean);
-    if (!terms.length) return recipes;
+    if (!terms.length) return recipes.slice();
     return recipes.filter((r) => terms.every((t) => r._hay.includes(t)));
   }
 
@@ -100,24 +214,35 @@
     const hits = match(query);
     clearBtn.hidden = !query;
 
-    list.innerHTML = hits.map((r) => `
+    // A to Z in the language on screen: ą, č and š sort where they belong.
+    hits.sort((a, b) => collator.compare(said(a).title, said(b).title));
+
+    list.innerHTML = hits.map((r) => {
+      const d = said(r);
+      return `
       <li><button class="row" type="button" data-slug="${r.slug}" style="--accent:${accent(r.slug)}">
         <span class="text">
-          <span class="name">${mark(r.title, query)}</span>
-          ${r.time ? `<span class="meta">${esc(r.time)}</span>` : ""}
+          <span class="name">${mark(d.title, query)}</span>
+          ${d.time ? `<span class="meta">${esc(d.time)}</span>` : ""}
         </span>
         ${r.link && isVideo(r.link) ? PLAY : ""}
         ${CHEV}
-      </button></li>`).join("");
+      </button></li>`;
+    }).join("");
 
     empty.hidden = hits.length > 0;
-    if (!hits.length) empty.textContent = `Nothing matches “${query}”.`;
+    if (!hits.length) empty.textContent = T().nothing(query);
   }
 
   /* --------------------------------------------------------------- sheet */
 
   function body(r) {
+    const t = T(), d = said(r);
     let html = "";
+
+    if (!r.langs.includes(lang)) {
+      html += `<p class="fallback">${esc(t.fallback)}</p>`;
+    }
 
     if (r.link) {
       const video = isVideo(r.link);
@@ -126,17 +251,32 @@
         ${video
           ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>'
           : '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a16 16 0 0 1 0 18M12 3a16 16 0 0 0 0 18"/></svg>'}
-        <span>${video ? "Watch" : esc(hostOf(r.link))}</span></a>`;
+        <span>${video ? esc(t.watch) : esc(hostOf(r.link))}</span></a>`;
     }
 
-    html += `<section><h3>Ingredients</h3><ul class="ings">${
-      r.ingredients.map((i) => `<li>${inline(i)}</li>`).join("")}</ul></section>`;
+    html += `<section><h3>${esc(t.ingredients)}</h3><ul class="ings">${
+      d.ingredients.map((i) => `<li>${inline(i)}</li>`).join("")}</ul></section>`;
 
-    html += `<section><h3>Method</h3><ol class="steps">${
-      r.steps.map((s) => `<li>${inline(s)}</li>`).join("")}</ol>`;
+    html += `<section><h3>${esc(t.method)}</h3><ol class="steps">${
+      d.steps.map((s) => `<li>${inline(s)}</li>`).join("")}</ol>`;
 
-    if (r.note) html += `<p class="note">${inline(r.note)}</p>`;
+    if (d.note) html += `<p class="note">${inline(d.note)}</p>`;
     return html + "</section>";
+  }
+
+  // Everything the sheet says, with no regard for whether it is already up.
+  function fill(r) {
+    const t = T(), d = said(r);
+    sheet.style.setProperty("--accent", accent(r.slug));
+    $("sheet-title").textContent = d.title;
+    $("sheet-title").lang = r.langs.includes(lang) ? lang : r.langs[0];
+    $("sheet-meta").textContent =
+      [d.time, r.servings && t.serves(r.servings)].filter(Boolean).join(" · ");
+    $("sheet-meta").hidden = !$("sheet-meta").textContent;
+    $("sheet-body").innerHTML = body(r);
+    resetAction("copy", t.copy);
+    resetAction("share", t.share);
+    document.title = `${d.title} · ${t.brand}`;
   }
 
   function show(slug) {
@@ -144,15 +284,8 @@
     if (!r) return;
     open = slug;
 
-    sheet.style.setProperty("--accent", accent(slug));
-    $("sheet-title").textContent = r.title;
-    $("sheet-meta").textContent =
-      [r.time, r.servings && `serves ${r.servings}`].filter(Boolean).join(" · ");
-    $("sheet-meta").hidden = !$("sheet-meta").textContent;
-    $("sheet-body").innerHTML = body(r);
+    fill(r);
     $("sheet-body").scrollTop = 0;
-    resetAction("copy", "Copy");
-    resetAction("share", "Share");
 
     scrollY = window.scrollY;
     document.body.style.top = `-${scrollY}px`;
@@ -166,7 +299,6 @@
       sheet.classList.add("in");
     });
     $("close").focus({ preventScroll: true });
-    document.title = `${r.title} · Recipes`;
   }
 
   function hide() {
@@ -174,7 +306,7 @@
     open = null;
     sheet.classList.remove("in");
     scrim.classList.remove("in");
-    document.title = "Recipes";
+    document.title = T().brand;
 
     const done = () => {
       sheet.hidden = true;
@@ -215,25 +347,27 @@
     .replace(/(^|[^*])\*([^*]+)\*/g, "$1$2");
 
   function asText(r) {
-    const head = [r.time, r.servings && `serves ${r.servings}`].filter(Boolean).join(" · ");
+    const t = T(), d = said(r);
+    const head = [d.time, r.servings && t.serves(r.servings)].filter(Boolean).join(" · ");
     return [
-      r.title,
+      d.title,
       head,
       "",
-      "Ingredients",
-      ...r.ingredients.map((i) => `- ${flat(i)}`),
+      t.ingredients,
+      ...d.ingredients.map((i) => `- ${flat(i)}`),
       "",
-      "Method",
-      ...r.steps.map((s, n) => `${n + 1}. ${flat(s)}`),
-      ...(r.note ? ["", flat(r.note)] : []),
+      t.method,
+      ...d.steps.map((s, n) => `${n + 1}. ${flat(s)}`),
+      ...(d.note ? ["", flat(d.note)] : []),
       ...(r.link ? ["", r.link] : []),
       "",
       permalink(r.slug),
     ].filter((l, i, a) => !(l === "" && a[i - 1] === "")).join("\n");
   }
 
+  // The language travels with the link, so what you send is what they read.
   const permalink = (slug) =>
-    location.origin + location.pathname + "#" + slug;
+    `${location.origin}${location.pathname}?lang=${lang}#${slug}`;
 
   async function toClipboard(text) {
     try {
@@ -262,7 +396,7 @@
     btn.classList.add("done");
     $(id + "-label").textContent = label;
     clearTimeout(btn._t);
-    btn._t = setTimeout(() => resetAction(id, id === "copy" ? "Copy" : "Share"), 1600);
+    btn._t = setTimeout(() => resetAction(id, T()[id]), 1600);
   }
 
   function resetAction(id, label) {
@@ -314,6 +448,11 @@
     location.hash = "#" + row.dataset.slug;
   });
 
+  $("langs").addEventListener("click", (e) => {
+    const btn = e.target.closest(".lang");
+    if (btn) setLang(btn.dataset.lang);
+  });
+
   input.addEventListener("input", render);
   input.addEventListener("search", render);
 
@@ -338,26 +477,29 @@
 
   $("copy").addEventListener("click", async () => {
     const ok = await toClipboard(asText(bySlug.get(open)));
-    flash("copy", ok ? "Copied" : "Press ⌘C");
+    flash("copy", ok ? T().copied : T().copyFail);
   });
 
   $("share").addEventListener("click", async () => {
     const r = bySlug.get(open);
     if (navigator.share) {
       try {
-        await navigator.share({ title: r.title, url: permalink(r.slug) });
+        await navigator.share({ title: said(r).title, url: permalink(r.slug) });
         return;
       } catch (err) {
         if (err && err.name === "AbortError") return;
       }
     }
     const ok = await toClipboard(permalink(r.slug));
-    flash("share", ok ? "Link copied" : "Could not copy");
+    flash("share", ok ? T().shared : T().shareFail);
   });
 
   window.addEventListener("hashchange", sync);
 
   /* ----------------------------------------------------------------- load */
+
+  applyChrome();
+  stampURL();
 
   fetch("recipes.json", { cache: "no-cache" })
     .then((res) => {
@@ -374,7 +516,7 @@
     .catch((err) => {
       empty.hidden = false;
       empty.textContent = location.protocol === "file:"
-        ? "Open this through a web server — a file:// page cannot load recipes.json."
-        : "Could not load the recipes (" + err.message + ").";
+        ? T().noServer
+        : T().noLoad(err.message);
     });
 })();

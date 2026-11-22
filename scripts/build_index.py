@@ -9,9 +9,13 @@ It is also the validator: it prints every problem it finds and writes nothing
 if there are any. Stdlib only, so CI needs nothing beyond Python. Files
 starting with "_" are skipped -- that is how _template.md stays out of the site.
 
-Each recipe is one .md: YAML front matter for the facts, a '## Ingredients'
-bullet list, and a '## Method' numbered list. Only `title` and those two
-sections are required.
+Each recipe is one .md file, and that one file holds every language it has
+been written in. English is required: a '## Ingredients' bullet list and a
+'## Method' numbered list. Lithuanian is optional and sits in the same file
+under '## Sudedamosios dalys' and '## Gaminimas' -- write both of those or
+neither. Front matter fields take an '_lt' suffix for their Lithuanian text:
+title_lt, description_lt, categories_lt, time_lt. Anything with no Lithuanian
+falls back to the English, and the build says how many are still waiting.
 
 The ingredient *name* used for searching is guessed from each line ("2 tbsp
 olive oil, warmed" -> "olive oil"). The guess is a heuristic, not a parser, so
@@ -21,7 +25,8 @@ the page, used only for searching:
     - 400 g tin of plum tomatoes <!-- tomato -->
 
 A bad guess never fails the build; it just leaves that line searchable by its
-own words instead.
+own words instead. There is no Lithuanian stemmer here, only a list of units
+to drop, so Lithuanian lines lean on that comment rather more.
 """
 
 import json
@@ -35,6 +40,19 @@ ROOT = Path(__file__).resolve().parent.parent
 RECIPE_DIR = ROOT / "recipes"
 OUT = ROOT / "recipes.json"
 
+LANGS = ("en", "lt")
+LANG_NAMES = {"en": "English", "lt": "Lithuanian"}
+
+# The headings that carry a recipe, and which language each one speaks.
+SECTION_HEADINGS = {
+    "Ingredients":        ("en", "ingredients"),
+    "Method":             ("en", "method"),
+    "Sudedamosios dalys": ("lt", "ingredients"),
+    "Gaminimas":          ("lt", "method"),
+}
+BY_HEADING = {h.lower(): v for h, v in SECTION_HEADINGS.items()}
+HEADING_FOR = {v: h for h, v in SECTION_HEADINGS.items()}
+
 # Tokens dropped from the front of an ingredient line when guessing its name.
 UNITS = {
     "g", "kg", "mg", "ml", "l", "dl", "cl", "oz", "lb", "lbs",
@@ -46,6 +64,18 @@ UNITS = {
     "packet", "packets", "pack", "block", "stick", "sticks", "piece", "pieces",
     "large", "small", "medium", "big", "whole", "half", "few", "some",
     "x", "of", "a", "an", "the", "about", "approx", "heaped", "level",
+}
+
+# The same, for Lithuanian. Leading units only: Lithuanian inflects the noun
+# itself, and guessing at that would be a parser, not a heuristic. When a line
+# needs a name its own words do not give, use <!-- override -->.
+UNITS_LT = {
+    "g", "kg", "mg", "ml", "l", "dl", "vnt", "vnt.",
+    "a", "v", "s", "saukstas", "sauksto", "sauksteliai",
+    "šaukštas", "šaukštai", "šaukšto", "šaukštų",
+    "šaukštelis", "šaukšteliai", "šaukštelio", "šaukštelių",
+    "skiltelė", "skiltelės", "skiltelių", "žiupsnelis", "žiupsnis",
+    "sauja", "saujos", "saujelė", "apie", "didelis", "didelė", "mažas", "maža",
 }
 
 # Dropped from either end -- prep notes and adjectives, not the ingredient.
@@ -131,7 +161,7 @@ def split_front_matter(text, where):
 
 
 # --------------------------------------------------------------------------
-# Body: the '## Ingredients' and '## Method' sections.
+# Body: the ingredients and method sections, in whichever languages are there.
 # --------------------------------------------------------------------------
 
 def sections(body):
@@ -187,7 +217,7 @@ def singular(w):
     return w[:-1] if w.endswith("s") else w
 
 
-def ingredient_name(raw):
+def ingredient_name(raw, lang="en"):
     override = OVERRIDE.search(raw)
     if override:
         return override.group(1).strip().lower()
@@ -195,6 +225,13 @@ def ingredient_name(raw):
     s = s.split(",")[0]                    # and everything after the first comma
     s = re.sub(r"[*_`\[\]]|\(.*?\)", "", s)
     words = [w for w in re.split(r"[\s/]+", s.lower()) if w]
+
+    if lang != "en":
+        while words and (QTY.match(words[0]) or words[0].strip(".") in UNITS_LT):
+            words.pop(0)
+        words = [w for w in (re.sub(r"[^\w'\- ]", "", w) for w in words) if w]
+        return " ".join(words).strip()
+
     while words and (QTY.match(words[0]) or words[0].strip(".") in UNITS
                      or (len(words) > 1 and words[0].strip(".") in PREP)):
         words.pop(0)
@@ -214,57 +251,95 @@ def plain(raw):
     return MDLINK.sub(r"\1", OVERRIDE.sub("", raw)).strip()
 
 
-def load(path):
-    where = path.relative_to(ROOT).as_posix()
-    meta, body = split_front_matter(path.read_text(encoding="utf-8"), where)
+def facet(where, lang, parts, meta):
+    """One language's half of a recipe. What is not written falls back to English."""
+    sfx = "" if lang == "en" else f"_{lang}"
 
-    if not str(meta.get("title", "")).strip():
+    def field(name):
+        v = str(meta.get(name + sfx, "")).strip()
+        return v or (str(meta.get(name, "")).strip() if sfx else "")
+
+    title = field("title")
+    if not title:
         raise BuildError(f"{where}: missing a 'title'")
 
-    cats = meta.get("categories", [])
+    cats = meta.get("categories" + sfx) or meta.get("categories", [])
     if isinstance(cats, str):
         cats = [cats]
     if not isinstance(cats, list):
-        raise BuildError(f"{where}: 'categories' must be a list, e.g. [breakfast, quick]")
+        raise BuildError(f"{where}: 'categories{sfx}' must be a list, e.g. [breakfast, quick]")
 
-    secs = sections(body)
-    if "ingredients" not in secs:
-        raise BuildError(f"{where}: no '## Ingredients' section")
-    if "method" not in secs:
-        raise BuildError(f"{where}: no '## Method' section")
-
-    lines = bullets(secs["ingredients"])
+    lines = bullets(parts["ingredients"])
     if not lines:
-        raise BuildError(f"{where}: the '## Ingredients' section has no bullet list")
-    steps = bullets(secs["method"])
+        raise BuildError(f"{where}: the '## {HEADING_FOR[(lang, 'ingredients')]}' "
+                         f"section has no bullet list")
+    steps = bullets(parts["method"])
     if not steps:
-        raise BuildError(f"{where}: the '## Method' section has no numbered steps")
+        raise BuildError(f"{where}: the '## {HEADING_FOR[(lang, 'method')]}' "
+                         f"section has no numbered steps")
 
     ingredients, names = [], set()
     for raw in lines:
         text = plain(raw)
         ingredients.append(text)
         # A line the guesser cannot name stays searchable by its own words.
-        names.add(ingredient_name(raw) or text.lower())
+        names.add(ingredient_name(raw, lang) or text.lower())
+
+    return {
+        "title": title,
+        "description": field("description"),
+        "tags": sorted({str(t).strip().lower() for t in cats if str(t).strip()}),
+        "ingredients": ingredients,
+        "names": sorted(n for n in names if n),
+        "steps": steps,
+        "note": trailing_note(parts["method"]),
+        "time": field("time"),
+    }
+
+
+def load(path):
+    where = path.relative_to(ROOT).as_posix()
+    meta, body = split_front_matter(path.read_text(encoding="utf-8"), where)
+
+    heads = sections(body)
+    found = {}
+    for heading, lines in heads.items():
+        if heading in BY_HEADING:
+            lang, kind = BY_HEADING[heading]
+            found.setdefault(lang, {})[kind] = lines
+
+    if "en" not in found:
+        missing = [HEADING_FOR[("en", k)] for k in ("ingredients", "method")
+                   if HEADING_FOR[("en", k)].lower() not in heads]
+        raise BuildError(f"{where}: no "
+                         + " and ".join(f"'## {h}'" for h in missing)
+                         + (" sections" if len(missing) > 1 else " section"))
+    for lang in LANGS:
+        if lang not in found:
+            continue
+        for kind in ("ingredients", "method"):
+            if kind not in found[lang]:
+                head = f"'## {HEADING_FOR[(lang, kind)]}'"
+                if lang == "en":
+                    raise BuildError(f"{where}: no {head} section")
+                raise BuildError(
+                    f"{where}: has {LANG_NAMES[lang]} text but no {head} section "
+                    f"-- a language is written in full or not at all")
 
     link = str(meta.get("link", meta.get("source", ""))).strip()
     if link and not link.startswith(("http://", "https://")):
         raise BuildError(f"{where}: 'link' must be a full http(s) URL, got {link!r}")
 
-    return {
+    out = {
         "slug": slugify(path.stem),
-        "title": str(meta["title"]),
-        "description": str(meta.get("description", "")),
-        "tags": sorted({str(t).strip().lower() for t in cats if str(t).strip()}),
-        "ingredients": ingredients,
-        "names": sorted(n for n in names if n),
-        "steps": steps,
-        "note": trailing_note(secs["method"]),
-        "time": str(meta.get("time", "")),
+        "langs": [l for l in LANGS if l in found],
         "servings": str(meta.get("servings", "")),
         "link": link,
         "file": where,
     }
+    for lang in out["langs"]:
+        out[lang] = facet(where, lang, found[lang], meta)
+    return out
 
 
 def main():
@@ -298,16 +373,23 @@ def main():
         print("", file=sys.stderr)
         return 1
 
-    out.sort(key=lambda r: r["title"].lower())
+    out.sort(key=lambda r: r["en"]["title"].lower())
     OUT.write_text(json.dumps({
         "built": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "langs": list(LANGS),
         "recipes": out,
     }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
-    tags = {t for r in out for t in r["tags"]}
-    names = {n for r in out for n in r["names"]}
+    tags = {t for r in out for l in r["langs"] for t in r[l]["tags"]}
+    names = {n for r in out for l in r["langs"] for n in r[l]["names"]}
     print(f"[recipes] {len(out)} recipes indexed "
           f"({len(tags)} tags, {len(names)} ingredients) -> {OUT.name}")
+
+    # Not an error: the page falls back to English. It is a standing to-do.
+    todo = [r["slug"] for r in out if "lt" not in r["langs"]]
+    if todo:
+        print(f"[recipes] {len(todo)} with no Lithuanian yet, shown in English: "
+              + ", ".join(todo))
     return 0
 
 

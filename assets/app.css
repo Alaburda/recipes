@@ -53,6 +53,10 @@ body.locked {
 /* ---------------------------------------------------------------- masthead */
 
 .masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   max-width: var(--page);
   margin: 0 auto;
   padding: 28px var(--gutter) 14px;
@@ -65,6 +69,42 @@ body.locked {
   font-weight: 700;
   letter-spacing: -0.015em;
   color: var(--pomegranate);
+}
+
+/* A segmented pair, not a dropdown: there are two languages and both fit. */
+.langs {
+  flex: none;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--wash);
+  border: 1.5px solid var(--hairline);
+  border-radius: 999px;
+}
+
+.lang {
+  min-width: 40px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font: 700 12px/1 var(--sans);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lang[aria-pressed="true"] {
+  background: var(--white);
+  color: var(--pomegranate);
+  box-shadow: 0 1px 2px rgba(35, 28, 24, 0.14);
+}
+
+.lang:focus-visible {
+  outline: 2px solid var(--pomegranate);
+  outline-offset: 2px;
 }
 
 /* --------------------------------------------------------------- searchbar */
@@ -423,6 +463,26 @@ main {
   font-weight: 600;
   color: var(--ink);
   text-decoration: none;
+}
+
+/* Shown when the recipe has not been written in the chosen language yet. */
+.fallback {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.fallback::before {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 5px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--amber);
 }
 
 .chip svg { width: 15px; height: 15px; flex: none; }

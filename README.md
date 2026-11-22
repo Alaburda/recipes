@@ -13,25 +13,62 @@ recipes into an index.
 
 1. Copy [`recipes/_template.md`](recipes/_template.md) to `recipes/your-dish.md`.
    The filename becomes the URL, so keep it lowercase-with-hyphens.
-2. Fill in the front matter and the two sections.
+2. Fill in the front matter and the sections — **in both Lithuanian and
+   English**. See [Two languages](#two-languages) below.
 3. Commit and push. The site rebuilds itself.
 
 ```yaml
 ---
 title: "Shakshuka"                                  # the only required field
+title_lt: "Šakšuka"
 description: Eggs poached in a spiced tomato sauce. # searchable, not displayed
+description_lt: Kiaušiniai, pakepinti prieskoniuotame pomidorų padaže.
 categories: [breakfast, vegetarian, one-pan]        # searchable, not displayed
+categories_lt: [pusryčiai, vegetariška, vienoje keptuvėje]
 time: 30 min
-servings: 2
+time_lt: 30 min
+servings: 2                                         # one field, not per language
 link: https://www.youtube.com/watch?v=xxxxxxxxxxx   # optional
 ---
 ```
 
-Then a `## Ingredients` bullet list and a `## Method` numbered list. That is the
-whole format. Required: `title` and both sections — everything else is optional.
+Then a `## Ingredients` bullet list and a `## Method` numbered list, and the
+same two in Lithuanian under `## Sudedamosios dalys` and `## Gaminimas`. That
+is the whole format. Required: `title` and the two English sections —
+everything else is optional, and anything with no `_lt` falls back to English.
 
 A line of prose after the numbered steps becomes a note at the bottom of the
 recipe. That is where "keeps three days in the fridge" goes.
+
+## Two languages
+
+Every recipe should be submitted in **both Lithuanian and English**. One file
+still holds one recipe — the two languages sit in it side by side:
+
+```markdown
+## Ingredients          ## Sudedamosios dalys
+## Method               ## Gaminimas
+```
+
+Write a language in full or not at all: a file with `## Sudedamosios dalys` and
+no `## Gaminimas` fails the build, and says so. English is what the build
+requires and what the page falls back to — a recipe with no Lithuanian yet
+still appears, reads in English, and carries a line saying it has not been
+translated. The build prints the ones still waiting:
+
+```
+[recipes] 12 recipes indexed (28 tags, 70 ingredients) -> recipes.json
+[recipes] 11 with no Lithuanian yet, shown in English: banana-bread, cacio-e-pepe, …
+```
+
+That is a to-do list, not an error. Nothing fails because of it.
+
+On the page, **EN / LT** in the top right switches everything — titles, steps,
+section headings, the search box, Copy and Share. The choice is remembered on
+the device and travels in the link: `…/?lang=lt#karbonadai` opens the
+Lithuanian, `?lang=en` the English, so a recipe you send arrives in the
+language you sent it in. The `#slug` still means one thing only, which is that
+the sheet is up.
 
 ## The two things worth knowing
 
@@ -47,6 +84,15 @@ only for searching:
 A bad guess never fails the build. The line just stays searchable by its own
 words instead.
 
+Lithuanian leans on that comment rather more. There is no Lithuanian stemmer
+here — only a list of units to drop — because Lithuanian inflects the noun
+itself and guessing at that would be a parser, not a heuristic. So
+`4 vištienos krūtinėlės` will not find its way to `vištiena` on its own:
+
+```markdown
+- 4 vištienos krūtinėlės <!-- vištiena -->
+```
+
 **`link:` is one field, and YouTube is special-cased.** A `youtube.com` or
 `youtu.be` URL gets a ▶ Watch chip in the recipe and a small play mark on its
 row in the list, so you can see at a glance which recipes you saved a video for.
@@ -54,10 +100,16 @@ Anything else is shown by its domain.
 
 ## Search
 
-One box, matching across titles, descriptions, tags and ingredients at once.
-Multiple words are an AND — `quick onion` finds recipes that match both.
-Accents are folded, so `creme` finds `crème`. Matches in a title are
-highlighted; matches anywhere else are silent.
+One box, matching across titles, descriptions, tags and ingredients at once —
+**in both languages at once**, whichever one you are reading in, so `vištiena`
+finds the recipe you have on screen in English. Multiple words are an AND —
+`quick onion` finds recipes that match both. Accents are folded, so `creme`
+finds `crème` and `vistiena` finds `vištiena`: a keyboard without the
+Lithuanian letters is no obstacle. Matches in a title are highlighted; matches
+anywhere else are silent.
+
+The list sorts itself in the language on screen, so `ą`, `č` and `š` land
+where a Lithuanian reader expects them.
 
 ## The look
 
